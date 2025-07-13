@@ -11,19 +11,19 @@ import cv2
 from tkinter import Tk, filedialog, messagebox
 import sys
 
-# === Setup dynamic base path for Tesseract ===
+
 if getattr(sys, 'frozen', False):
-    # Running as PyInstaller bundle
+    
     base_path = sys._MEIPASS
 else:
-    # Running as normal script
-    base_path = os.path.dirname(os.path.abspath(_file_))
+    
+    base_path = os.path.dirname(os.path.abspath(__file__))
 
-# Tesseract executable path inside the project folder (rename your folder 'Tesseract-OCR' to 'tesseract')
+
 tesseract_path = os.path.join(base_path, 'tesseract', 'tesseract.exe')
 pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
-# === GUI setup ===
+
 root = Tk()
 root.withdraw()
 
@@ -42,7 +42,7 @@ if not excel_path:
     messagebox.showerror("Missing Excel File", "❌ No Excel file selected. Exiting.")
     exit(1)
 
-# === CMBO column map ===
+
 cmbo_map = {
     "APAC STAFF": {"Packet Loss": "B", "Latency": "H", "Jitter": "N"},
     "APAC MOBILE": {"Packet Loss": "C", "Latency": "I", "Jitter": "O"},
@@ -52,7 +52,7 @@ cmbo_map = {
     "VLAN 92": {"Packet Loss": "G", "Latency": "M", "Jitter": "S"},
 }
 
-# === PCWK column map ===
+
 pcwk_map = {
     "APAC STAFF": {"Packet Loss": "W", "Latency": "AA", "Jitter": "AE"},
     "APAC MOBILE": {"Packet Loss": "X", "Latency": "AB", "Jitter": "AF"},
@@ -60,14 +60,14 @@ pcwk_map = {
     "VLAN": {"Packet Loss": "Z", "Latency": "AD", "Jitter": "AH"},
 }
 
-# === Regex patterns ===
+
 patterns = {
-    "Packet Loss": r'Packet\s*loss.*?([\d\.]+%)',
-    "Latency": r'Latency.*?([\d\.]+\s*ms)',
-    "Jitter": r'Jitter.*?([\d\.]+\s*ms)',
+    "Packet Loss": r'Packet\s*loss.*?([\d\.]+%)\,',
+    "Latency": r'Latency.*?([\d\.]+\s*ms)\,',
+    "Jitter": r'Jitter.*?([\d\.]+\s*ms)\,',
 }
 
-# === Find next writable row ===
+
 def find_next_available_row(sheet, col="A"):
     row = 1
     while True:
@@ -76,7 +76,7 @@ def find_next_available_row(sheet, col="A"):
             return row
         row += 1
 
-# === Load workbook and worksheet ===
+
 wb = load_workbook(excel_path)
 if "Connectivity" not in wb.sheetnames:
     messagebox.showerror("Missing Sheet", f"⚠ 'Connectivity' sheet not found in {excel_path}. Exiting.")
@@ -84,13 +84,13 @@ if "Connectivity" not in wb.sheetnames:
 
 ws = wb["Connectivity"]
 
-# === Add timestamp ===
+
 now = datetime.now().strftime("%d-%m-%Y") + " - 11.00AM"
 next_row = find_next_available_row(ws)
-ws[f"A{next_row}"] = now  # CMBO timestamp
-ws[f"V{next_row}"] = now  # PCWK timestamp
+ws[f"A{next_row}"] = now  
+ws[f"V{next_row}"] = now  
 
-# === Process PDFs ===
+
 for filename in os.listdir(pdf_folder):
     if not filename.lower().endswith(".pdf"):
         continue
@@ -116,7 +116,7 @@ for filename in os.listdir(pdf_folder):
     print(f"\n📄 Processing: {filename}")
     print("📝 Extracted text (preview):", text[:300])
 
-    # PCWK section
+    
     if name.endswith("PCWK"):
         base_name = name.replace(" PCWK", "").strip()
         if base_name == "LAN":
@@ -134,7 +134,7 @@ for filename in os.listdir(pdf_folder):
             print(f"✅ PCWK {base_name} {metric}: {value} → {col}{next_row}")
         continue
 
-    # CMBO section
+    
     if name not in cmbo_map:
         print(f"⚠ Skipping CMBO: Unrecognized source '{name}'")
         continue
@@ -146,6 +146,6 @@ for filename in os.listdir(pdf_folder):
         ws[f"{col}{next_row}"] = value
         print(f"✅ CMBO {name} {metric}: {value} → {col}{next_row}")
 
-# === Save workbook ===
+
 wb.save(excel_path)
 messagebox.showinfo("Success", f"✅ All CMBO & PCWK data written successfully to:\n{excel_path}")
